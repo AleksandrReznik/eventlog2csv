@@ -8,6 +8,8 @@
     paramPathToSaveFiles - path to create log file, if not specified will take current script execution path.
     paramAllLogsOrSingleLog - name of an Event Log channel to process ("security", "application" for example), or "all" - in this case it will process all chanells registered
     in the system to a single CSV file. Each channel will have diferent ContainerLog column value (actually a channel name)
+    paramNrOfLogRecordsToProcess - max records to process for each channel. Upon reaching this number of events it will switch to another channel. Put low value here for 
+    testing the script
 .OUTPUTS
     Program utilize LogWrite function which program messages to both screen and log file. Also adds script contents to log file :)
     Two files are created in the same folder where run program is located:
@@ -19,8 +21,8 @@
     Run in elevated powershell (RunaAs administrator). Reading channels like "Security" requires this.
     For all exported elements of event log it will replace " to ' to avoid confusion with CSV structure.
     Program gives me processing speed ~25 records per second if run on Powershell 5.2, and ~600 records per second if run on Powershell.7.x
-    Program is created as Proof Of Concept and provided as is, with absolutely no warranty expressed or implied. Any use is at your own risk.
     At the end of a program there is an example code which reads just created CSV and filters it by extracting interactive logons and LDAP connections
+    Program is created as Proof Of Concept and provided as is, with absolutely no warranty expressed or implied. Any use is at your own risk.
     Author: Aleksandr Reznik (aleksandr@reznik.lt)
 #>
 
@@ -125,14 +127,14 @@ foreach($logname in $logNames){
     $numberOfRecords = (Get-WinEvent -ListLog $logname.Logname).RecordCount
     $operationStartTime = Get-Date
     LogWrite "Start fetching records for log $($logname.Logname) with Get-WinEvent. Record limitation $paramNrOfLogRecordsToProcess"
-    $filteredEeventList = Get-WinEvent -FilterHashtable @{logname = $logname.logname}  -ErrorAction Continue| Select-Object -First $paramNrOfLogRecordsToProcess
-    #$filteredEeventList = Get-WinEvent -ComputerName $computerTogetLogsFrom -FilterHashtable @{logname = $logname.logname}  -ErrorAction Continue| Select-Object -First $paramNrOfLogRecordsToProcess
+    $filteredEventList = Get-WinEvent -FilterHashtable @{logname = $logname.logname}  -ErrorAction Continue| Select-Object -First $paramNrOfLogRecordsToProcess
+    #$filteredEventList = Get-WinEvent -ComputerName $computerTogetLogsFrom -FilterHashtable @{logname = $logname.logname}  -ErrorAction Continue| Select-Object -First $paramNrOfLogRecordsToProcess
     $oldestEvent = Get-WinEvent -ComputerName $computerTogetLogsFrom -logname $logname.logname -oldest -MaxEvents 1
     $newestEvent = Get-WinEvent -ComputerName $computerTogetLogsFrom -logname $logname.logname -maxEvents 1
-    $numberOfFilteredRecords = $filteredEeventList.count
+    $numberOfFilteredRecords = $filteredEventList.count
     LogWrite "Finish fetching records. Total number of records in log: $numberOfRecords. Number of filtered records: $numberOfFilteredRecords"
     LogWrite "Elapsed time: $((Get-Date) - $operationStartTime)"
-    #$filteredEeventList = Get-WinEvent -ComputerName $computerTogetLogsFrom -FilterHashtable @{logname = "Application"}  -ErrorAction Continue| Select-Object -First $paramNrOfLogRecordsToProcess
+    #$filteredEventList = Get-WinEvent -ComputerName $computerTogetLogsFrom -FilterHashtable @{logname = "Application"}  -ErrorAction Continue| Select-Object -First $paramNrOfLogRecordsToProcess
     
     $numberOfProperties = 27
     $maxProperties = 0
@@ -148,7 +150,7 @@ foreach($logname in $logNames){
     
     $strBlock  = $strBlock + $currStr
     $blockStartTime = Get-Date
-    foreach($currEvent in $filteredEeventList){
+    foreach($currEvent in $filteredEventList){
         $eventNr++
         $eventDateTime = $currEvent.TimeCreated.ToString()
         $eventID = $currEvent.Id.ToString()
@@ -233,7 +235,9 @@ LogWrite
 LogWrite "Normalized eventlog information is written to $pathToCsvFile file"
 LogWrite -AddScriptContentsToLogFile
 $operationStartTime = Get-Date
+
 LogWrite
+LogWrite "Testing importing and filtering of just created CSV file"
 LogWrite "Start Import-CSV"
 $PSOobj4CSV = import-CSV  -path $pathToCsvFile
 LogWrite "End Import-CSV"
