@@ -3,7 +3,7 @@
     Export of Windows Event Logs to single CSV file.
 .DESCRIPTION     
     Powershell program which exports single specified or all Event Logs (called "channels" in official Microsoft documentation) to 
-    one CSV file ina way what <EventData> event record structure is split to multiple CSV columns. 
+    one CSV file in a way what <EventData> event record structure is split to multiple CSV columns. 
 .PARAMETER 
     paramPathToSaveFiles - path to create log file, if not specified will take current script execution path.
     paramAllLogsOrSingleLog - name of an Event Log channel to process ("security", "application" for example), or "all" - in this case it will process all chanells registered
