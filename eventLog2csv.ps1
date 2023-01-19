@@ -189,7 +189,7 @@ foreach($logname in $logNames){
             $currBlockLine++
             
             if(($eventNr % $strBlockSize) -eq 0 -or ($eventNr -eq $numberOfFilteredRecords)){
-                Add-Content $pathToCsvFile $strBlock
+                Add-Content $pathToCsvFile $strBlock -NoNewLine
                 $blockFinishTime = Get-Date
                 $timeDelta = $blockFinishTime - $blockStartTime
                 if ($timeDelta.TotalSeconds -ne 0){
